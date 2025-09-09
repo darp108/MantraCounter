@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="format-detection" content="telephone=no, email=no, address=no" />
   <link rel="preconnect" href="https://script.google.com" />
   <link rel="dns-prefetch" href="https://script.google.com" />
   <title>Mantra Counter · Google Sheets Backend</title>
@@ -45,10 +44,6 @@
       box-sizing: border-box
     }
 
-    html {
-      -webkit-text-size-adjust: 100%;
-    }
-
     html,
     body {
       height: 100%
@@ -64,9 +59,7 @@
     .container {
       max-width: 960px;
       margin: 32px auto;
-      padding: 0 16px;
-      /* iOS safe-area bottom padding so content/toast don't clash with home bar */
-      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      padding: 0 16px
     }
 
     .card {
@@ -134,9 +127,7 @@
       border-radius: 10px;
       cursor: pointer;
       font-weight: 600;
-      transition: transform .05s ease, background .2s, border-color .2s;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+      transition: transform .05s ease, background .2s, border-color .2s
     }
 
     button:hover {
@@ -229,9 +220,7 @@
       width: 0%;
       background: linear-gradient(90deg, var(--primary), var(--accent));
       border-radius: 999px;
-      transition: width .4s ease;
-      will-change: width; /* iOS GPU hint for smoother animation */
-      transform: translateZ(0);
+      transition: width .4s ease
     }
 
     .dots {
@@ -370,6 +359,17 @@
       min-height: 100dvh
     }
 
+    button,
+    .btn {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      filter: brightness(.96)
+    }
+
     input,
     button {
       font-size: 16px
@@ -378,7 +378,7 @@
     .toast {
       position: fixed;
       right: 16px;
-      bottom: calc(16px + env(safe-area-inset-bottom));
+      bottom: 16px;
       background: var(--surface);
       color: var(--text);
       border: 1px solid var(--border);
@@ -402,7 +402,7 @@
       background: rgba(0, 0, 0, .55);
       display: grid;
       place-items: center;
-      padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)) 16px;
+      padding: 16px
     }
 
     .modal .panel {
@@ -437,8 +437,7 @@
     @media (max-width:480px) {
       .container {
         margin: 16px auto;
-        padding: 0 12px;
-        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+        padding: 0 12px
       }
 
       .title {
@@ -461,6 +460,70 @@
         font-size: 12px
       }
     }
+
+    /* --- Insights (jot notes) --- */
+    .insight-card {
+      background: rgb(206 206 206 / 15%);
+      ;
+      border: 1px solid #ffffff;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .insight-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, .06);
+    }
+
+    [data-theme="dark"] .insight-chip {
+      background: rgba(255, 255, 255, .08);
+    }
+
+    .insight-title {
+      margin: 8px 0 6px;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: .2px;
+    }
+
+    .insight-list {
+      margin: 8px 0 0;
+      padding-left: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .insight-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: rgba(255, 255, 255, .55);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 700;
+    }
+
+    [data-theme="dark"] .insight-list li {
+      background: rgba(255, 255, 255, .04);
+    }
+
+    .insight-list li::before {
+      content: "✦";
+      flex: 0 0 auto;
+      font-size: 14px;
+      line-height: 1.35;
+      margin-top: 1px;
+      color: var(--primary);
+    }
   </style>
 </head>
 
@@ -471,7 +534,7 @@
       <div class="toolbar">
         <span class="chip" id="hello">🧘 <span id="helloName">Guest</span></span>
         <select id="paletteSelect" title="Palette">
-          <option value="luxury" selected>Luxury Gold</option>
+          <option value="luxury">Luxury Gold</option>
           <option value="jade">Emerald Jade</option>
           <option value="saffron">Saffron Sunrise</option>
           <option value="lotus">Lotus Pink</option>
@@ -553,11 +616,15 @@
             </div>
           </div>
 
-          <!-- Next Level -->
           <div id="nextView">
             <div class="stack">
               <div class="muted">Next level insight</div>
-              <div id="nextInfoText" style="font-weight:800;"></div>
+
+              <div class="insight-card">
+                <span class="insight-chip">Next: Level <span id="nextLevelNum">1</span></span>
+                <div id="nextInfoText" class="insight-title"></div>
+                <ul id="nextInfoList" class="insight-list" aria-label="Key insights for the next level"></ul>
+              </div>
             </div>
           </div>
 
@@ -596,7 +663,7 @@
       <p class="muted" style="margin-top:0">Enter your name to load your mantras from Google Sheets.</p>
       <div class="stack" style="margin-top:10px">
         <label for="nameInput">Your name</label>
-        <input id="nameInput" type="text" placeholder="e.g., Darp" autocomplete="off" />
+        <input id="nameInput" type="text" placeholder="e.g., Darp" />
       </div>
       <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px">
         <button class="btn" id="cancelNameBtn">Cancel</button>
@@ -612,6 +679,55 @@
 
     // 9 levels: 10M .. 90M
     const LEVELS = Array.from({ length: 9 }, (_, i) => (i + 1) * 10_000_000);
+    // Nicely phrased insights per level
+    const LEVEL_INFO = {
+      1: [
+        "The body becomes śuddha (pure).",
+        "Rajas & Tamas fall away; Sattva naturally arises.",
+        "Pāpa (karmas that cause disease) are cleansed.",
+        "Devotional feeling for God deepens.",
+        "Great saints and devas may grant darśan in dreams."
+      ],
+      2: [
+        "Either craving for wealth dissolves, or resources flow with ease.",
+        "You are surrounded by sukha & samṛddhi (well-being & prosperity)."
+      ],
+      3: [
+        "“Impossible” tasks feel easy; letting go of kāma & krodha becomes natural.",
+        "What you truly intend begins to arrive.",
+        "The world meets you with more love.",
+        "The antaḥkaraṇa becomes increasingly pavitra (pure)."
+      ],
+      4: [
+        "A steady inner happiness arises.",
+        "Insults to the ego lose their bite; reactivity drops.",
+        "Outer/inner hurdles no longer disturb you; the true Self is recognized more often.",
+        "Heart grows purer; body, mind & speech become nirvikāra (unaltered)."
+      ],
+      5: [
+        "Extraordinary insight arises—even that praised in śāstras.",
+        "Sincere prayers bear fruit (children, longevity, capability).",
+        "An unlearned person can become brilliant.",
+        "Worldly desires fade; if any remain, they are fulfilled without grasping."
+      ],
+      6: [
+        "Prārabdha can be attenuated; “incurable” diseases may resolve.",
+        "Victory over the six inner enemies strengthens.",
+        "Abidance in one’s true nature (Anādi-mukta) deepens.",
+        "Darśan of devas & saints brings profound joy."
+      ],
+      7: [
+        "No worldly attraction—including “kāminī”—can sway you.",
+        "You meet and can converse with great saints such as Nārada-ji."
+      ],
+      8: [
+        "Speech manifests as reality.",
+        "Direct darśan of Bhagavān as desired.",
+        "Full abidance in the true form."
+      ],
+      9: [] // reserved / blank for now
+    };
+
 
     // History limits
     const HISTORY_DEFAULT_LIMIT = 2;
@@ -624,7 +740,6 @@
       history: [],
       historyLimit: HISTORY_DEFAULT_LIMIT,
       historyIsPartial: true,
-      historyExpanded: false, // ensure defined for Show more/less
       posting: false,
       theme: localStorage.getItem('tally_theme') || 'light',
       palette: localStorage.getItem('tally_palette') || 'luxury'
@@ -667,6 +782,8 @@
       goals: document.getElementById('goalsView'),
     };
     const nextInfoText = document.getElementById('nextInfoText');
+    const nextLevelNum = document.getElementById('nextLevelNum');
+    const nextInfoList = document.getElementById('nextInfoList');
     const goalDays = document.getElementById('goalDays');
     const goalMonths = document.getElementById('goalMonths');
     const calcGoalBtn = document.getElementById('calcGoalBtn');
@@ -769,18 +886,6 @@
     progressWrap.addEventListener('click', flashTip);
     progressWrap.addEventListener('touchstart', () => { flashTip(); }, { passive: true });
 
-    // iOS: keep inputs visible above the keyboard
-    function ensureVisibleOnFocus(el) {
-      if (!el) return;
-      el.addEventListener('focus', () => {
-        setTimeout(() => {
-          try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) {}
-        }, 250);
-      }, { passive: true });
-    }
-    ensureVisibleOnFocus(document.getElementById('addAmount'));
-    ensureVisibleOnFocus(document.getElementById('nameInput'));
-
     // Name modal — write-first + cache hydrate
     document.getElementById('saveNameBtn').addEventListener('click', async () => {
       const n = (nameInput.value || '').trim();
@@ -795,12 +900,11 @@
         state.history = cached.history || [];
         state.historyLimit = HISTORY_DEFAULT_LIMIT;
         state.historyIsPartial = true;
-        state.historyExpanded = false;
         hideNameModal(); render();
       } else {
         hideNameModal();
         state.total = 0; state.history = [];
-        state.historyLimit = HISTORY_DEFAULT_LIMIT; state.historyIsPartial = true; state.historyExpanded = false;
+        state.historyLimit = HISTORY_DEFAULT_LIMIT; state.historyIsPartial = true;
         render();
       }
 
@@ -815,7 +919,6 @@
         state.history = minimal.history || [];
         state.historyLimit = HISTORY_DEFAULT_LIMIT;
         state.historyIsPartial = true;
-        state.historyExpanded = false;
         render(); saveCache(n, state);
 
         if (minimal.theme) { state.theme = minimal.theme; document.documentElement.setAttribute('data-theme', state.theme); localStorage.setItem('tally_theme', state.theme); }
@@ -876,10 +979,11 @@
       }
     });
 
-    // "Show more" — fetch full history on demand, then toggle Show less locally
+    // "Show more" — fetch full history on demand
     showMoreBtn.addEventListener('click', async () => {
       if (!state.name) return;
 
+      // First time: fetch the full history from the server
       if (state.historyIsPartial) {
         try {
           const more = await getJSON({ action: 'getUser', name: state.name, limit: String(HISTORY_MORE_LIMIT) });
@@ -888,7 +992,7 @@
           state.total = Number(more.total || 0);
           state.history = more.history || [];
           state.historyIsPartial = false;     // we've now loaded it all
-          state.historyExpanded = true;       // start expanded
+          state.historyExpanded = true;      // start expanded
           state.historyLimit = state.history.length;
           render();
           saveCache(state.name, state);
@@ -921,8 +1025,10 @@
         return;
       }
       const perDay = Math.ceil(remaining / totalDays);
+      const malasPerDay = Math.ceil(perDay / 108);
       goalResult.textContent =
-        `Level ${level + 1} in ${totalDays} day(s): ${perDay.toLocaleString()} per day.`;
+        `Level ${level + 1} in ${totalDays} day(s): ` +
+        `${perDay.toLocaleString()} per day.`;
     });
 
     // Render UI
@@ -961,17 +1067,35 @@
     }
 
     function renderNextInfo(level, next) {
-      if (!next) {
-        nextInfoText.textContent = 'You are at the top level. 🏁';
+      // Determine which level’s insights to show
+      let showLevel = next ? (level + 1) : LEVELS.length; // if at top, show Level 9 (blank for now)
+      nextLevelNum.textContent = showLevel;
+
+      // Title
+      nextInfoText.textContent = next
+        ? `Level ${showLevel}: What’s ahead`
+        : `Level ${showLevel}: You’re at the summit 🏁`;
+
+      // List items
+      const items = LEVEL_INFO[showLevel] || [];
+      nextInfoList.innerHTML = '';
+
+      if (!items.length) {
+        const li = document.createElement('li');
+        li.textContent = next
+          ? "Details coming soon."
+          : "Rest in silent fullness. ✨";
+        nextInfoList.appendChild(li);
         return;
       }
-      const nextLevelNum = level + 1;
-      if (nextLevelNum === 8) {
-        nextInfoText.textContent = 'Level 8 insight: whatever you say becomes reality.';
-      } else {
-        nextInfoText.textContent = '';
-      }
+
+      items.forEach(t => {
+        const li = document.createElement('li');
+        li.textContent = t;
+        nextInfoList.appendChild(li);
+      });
     }
+
 
     function updateHoverTip(remaining, next, level) {
       const info = remaining !== undefined ? { remaining, next, level } : computeLevel(state.total);
@@ -1053,5 +1177,5 @@
     })();
   </script>
 </body>
-
+  
 </html>
