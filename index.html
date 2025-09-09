@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="preconnect" href="https://script.google.com" />
+  <link rel="dns-prefetch" href="https://script.google.com" />
+  <title>Mantra Counter · Google Sheets Backend</title>
+  <style>
+    :root {
+      --bg: #f7f7fb;
+      --surface: #ffffff;
+      --text: #0e0f13;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-weak: rgba(37, 99, 235, .15);
+      --accent: #10b981;
+      --danger: #dc2626;
+      --border: #e5e7eb;
+      --shadow: 0 10px 30px rgba(16, 24, 40, .08);
+      --dot: #cbd5e1;
+      --dot-active: #111827;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0b0e14;
+      --surface: #0f1420;
+      --text: #e6e7ea;
+      --muted: #9aa4b2;
+      --primary: #60a5fa;
+      --primary-weak: rgba(96, 165, 250, .15);
+      --accent: #34d399;
+      --danger: #f87171;
+      --border: #1f2430;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+      --dot: #2a3342;
+      --dot-active: #e5e7eb;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, Ubuntu, Cantarell, Noto Sans, 'Helvetica Neue', Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+      background: var(--bg);
+      color: var(--text)
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 32px auto;
+      padding: 0 16px
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 20px
+    }
+
+    .row {
+      display: grid;
+      gap: 16px
+    }
+
+    @media (min-width:900px) {
+      .row {
+        grid-template-columns: 1.4fr .9fr
+      }
+    }
+
+    header.topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: .2px
+    }
+
+    .muted {
+      color: var(--muted)
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary-weak);
+      color: var(--primary);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 13px
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center
+    }
+
+    button,
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform .05s ease, background .2s, border-color .2s
+    }
+
+    button:hover {
+      transform: translateY(-1px)
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: transparent
+    }
+
+    .btn-primary:disabled {
+      opacity: .6;
+      cursor: not-allowed
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      font-weight: 600
+    }
+
+    label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600
+    }
+
+    .stack {
+      display: grid;
+      gap: 8px
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px
+    }
+
+    .tab {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      background: var(--surface);
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--muted)
+    }
+
+    .tab.active {
+      color: var(--text);
+      background: var(--bg)
+    }
+
+    .tabviews>div {
+      display: none
+    }
+
+    .tabviews>div.active {
+      display: block
+    }
+
+    /* Progress */
+    .progress-wrap {
+      position: relative;
+      padding: 18px 10px 28px
+    }
+
+    .progress-bar {
+      position: relative;
+      height: 10px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: visible
+    }
+
+    .progress-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 999px;
+      transition: width .4s ease
+    }
+
+    .dots {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 0;
+      pointer-events: none
+    }
+
+    .dot {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: var(--dot);
+      border-radius: 999px;
+      transform: translate(-50%, -50%);
+      border: 2px solid var(--surface);
+      box-shadow: var(--shadow)
+    }
+
+    .dot.reached {
+      background: var(--dot-active)
+    }
+
+    .level-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px
+    }
+
+    .hover-tip {
+      position: absolute;
+      padding: 8px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -8px);
+      transition: opacity .12s;
+      white-space: nowrap
+    }
+
+    /* Counters */
+    .count-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap
+    }
+
+    .big-count {
+      font-size: 40px;
+      font-weight: 900;
+      letter-spacing: .5px
+    }
+
+    .mala {
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .mala .icons {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap
+    }
+
+    .mala .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-weak);
+      color: var(--primary);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 800
+    }
+
+    .mala .icons .bead {
+      font-size: 18px;
+      line-height: 1
+    }
+
+    .mala .icons .more {
+      font-weight: 800
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    th,
+    td {
+      padding: 10px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border)
+    }
+
+    th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--muted)
+    }
+
+    tbody tr:hover {
+      background: rgba(0, 0, 0, .03)
+    }
+
+    [data-theme="dark"] tbody tr:hover {
+      background: rgba(255, 255, 255, .03)
+    }
+
+    .pending {
+      opacity: .7;
+      font-style: italic;
+    }
+
+    /* iOS/mobile */
+    html,
+    body {
+      min-height: 100%;
+      min-height: 100dvh
+    }
+
+    button,
+    .btn {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      filter: brightness(.96)
+    }
+
+    input,
+    button {
+      font-size: 16px
+    }
+
+    .toast {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      font-weight: 700;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .2s, transform .2s
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0)
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      display: grid;
+      place-items: center;
+      padding: 16px
+    }
+
+    .modal .panel {
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: var(--shadow)
+    }
+
+    .modal[hidden] {
+      display: none !important
+    }
+
+    .help {
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    /* Palette select */
+    select#paletteSelect {
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 600
+    }
+
+    @media (max-width:480px) {
+      .container {
+        margin: 16px auto;
+        padding: 0 12px
+      }
+
+      .title {
+        font-size: 18px
+      }
+
+      .big-count {
+        font-size: 32px
+      }
+
+      .tab {
+        padding: 10px 12px
+      }
+
+      .chip {
+        font-size: 12px
+      }
+
+      label {
+        font-size: 12px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header class="topbar">
+      <div class="title">Mantra Counter <span class="muted">· Google Sheets</span></div>
+      <div class="toolbar">
+        <span class="chip" id="hello">🧘 <span id="helloName">Guest</span></span>
+        <select id="paletteSelect" title="Palette">
+          <option value="luxury">Luxury Gold</option>
+          <option value="jade">Emerald Jade</option>
+          <option value="saffron">Saffron Sunrise</option>
+          <option value="lotus">Lotus Pink</option>
+          <option value="midnight">Midnight Indigo</option>
+          <option value="ruby">Ruby Flame</option>
+          <option value="sapphire">Sapphire Sky</option>
+          <option value="sunset">Sunset Coral</option>
+          <option value="forest">Forest Moss</option>
+          <option value="ocean">Ocean Teal</option>
+          <option value="rose">Rose Quartz</option>
+          <option value="amethyst">Amethyst Glow</option>
+          <option value="copper">Burnished Copper</option>
+          <option value="mono">Monochrome</option>
+          <option value="sakura">Sakura Bloom</option>
+          <option value="desert">Desert Sand</option>
+          <option value="aurora">Aurora Borealis</option>
+        </select>
+        <button class="btn" id="themeBtn" title="Toggle light/dark">🌙</button>
+        <button class="btn" id="switchUserBtn" title="Switch user">Switch</button>
+      </div>
+    </header>
+
+    <section class="card progress-wrap" id="progressWrap" aria-label="Progress">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+        <div class="dots" id="dots"></div>
+      </div>
+      <div class="level-labels" id="levelLabels"></div>
+      <div class="hover-tip" id="hoverTip">Tip</div>
+    </section>
+
+    <section class="row">
+      <div class="card">
+        <div class="stack">
+          <div class="count-row">
+            <div>
+              <div class="muted" id="levelText">Level 0 of 9</div>
+              <div class="big-count" id="totalCount">0</div>
+            </div>
+            <div class="mala" aria-label="Malas completed">
+              <span class="pill"><span id="malaQuot">0</span> × 📿</span>
+              <div class="icons" id="malaIcons" title="Each 📿 = 108 mantras"></div>
+            </div>
+          </div>
+        </div>
+        <div class="stack" style="margin-top:16px">
+          <label for="addAmount">Add mantra count</label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input id="addAmount" type="number" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" min="1"
+              step="1" placeholder="e.g., 108" />
+            <button id="addBtn" class="btn-primary">Add & Save</button>
+          </div>
+          <div class="help">Saves to Google Sheets. Mala (📿) = 108 mantras.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tabs" id="tabs">
+          <div class="tab active" data-tab="history">History</div>
+          <div class="tab" data-tab="next">Next Level</div>
+          <div class="tab" data-tab="goals">Goals</div>
+        </div>
+
+        <div class="tabviews">
+          <!-- History -->
+          <div id="historyView" class="active">
+            <table aria-label="History table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Added</th>
+                  <th>New Total</th>
+                </tr>
+              </thead>
+              <tbody id="historyBody"></tbody>
+            </table>
+            <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+              <button id="showMoreBtn" class="btn" hidden>Show more</button>
+            </div>
+          </div>
+
+          <!-- Next Level -->
+          <div id="nextView">
+            <div class="stack">
+              <div class="muted">Next level insight</div>
+              <div id="nextInfoText" style="font-weight:800;"></div>
+            </div>
+          </div>
+
+          <!-- Goals -->
+          <div id="goalsView">
+            <div class="stack">
+              <div class="muted">Plan to reach the next level</div>
+              <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr">
+                <div class="stack">
+                  <label for="goalDays">Days</label>
+                  <input id="goalDays" type="number" min="0" step="1" placeholder="e.g., 15" />
+                </div>
+                <div class="stack">
+                  <label for="goalMonths">Months (30 days each)</label>
+                  <input id="goalMonths" type="number" min="0" step="1" placeholder="e.g., 2" />
+                </div>
+              </div>
+              <div>
+                <button id="calcGoalBtn" class="btn">Calculate</button>
+              </div>
+              <div id="goalResult" style="font-weight:800;"></div>
+              <div class="help">This calculator is local-only (not saved to Google Sheets).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Name Modal -->
+  <div class="modal" id="nameModal" hidden>
+    <div class="panel">
+      <h3 style="margin:0 0 6px">Welcome! 🙏</h3>
+      <p class="muted" style="margin-top:0">Enter your name to load your mantras from Google Sheets.</p>
+      <div class="stack" style="margin-top:10px">
+        <label for="nameInput">Your name</label>
+        <input id="nameInput" type="text" placeholder="e.g., Alex" />
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px">
+        <button class="btn" id="cancelNameBtn">Cancel</button>
+        <button class="btn-primary" id="saveNameBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ======= CONFIG =======
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySBaUKdJq9KKDzDunxryyLNYPwTV8ueIMgrf0DjTlcKTSx-4BmrcZp3wYXXGMh2AuF/exec';
+    const API_KEY = ''; // keep blank (no key)
+
+    // 9 levels: 10M .. 90M
+    const LEVELS = Array.from({ length: 9 }, (_, i) => (i + 1) * 10_000_000);
+
+    // History limits
+    const HISTORY_DEFAULT_LIMIT = 2;
+    const HISTORY_MORE_LIMIT = 200;
+
+    // ======= STATE & CACHE =======
+    const state = {
+      name: null,
+      total: 0,
+      history: [],
+      historyLimit: HISTORY_DEFAULT_LIMIT,
+      historyIsPartial: true,
+      posting: false,
+      theme: localStorage.getItem('tally_theme') || 'light',
+      palette: localStorage.getItem('tally_palette') || 'classic'
+    };
+
+    const CACHE_PREFIX = 'tally_user_';
+    const keyFor = (name) => CACHE_PREFIX + (name || '').toLowerCase().trim();
+    function loadCache(name) { try { return JSON.parse(localStorage.getItem(keyFor(name)) || 'null'); } catch { return null; } }
+    function saveCache(name, data) {
+      try {
+        const toSave = { total: Number(data.total || 0), history: data.history || [], ts: Date.now() };
+        localStorage.setItem(keyFor(name), JSON.stringify(toSave));
+      } catch { }
+    }
+
+    // ======= INIT UI =======
+    const el = (id) => document.getElementById(id);
+    const helloName = el('helloName');
+    const totalCount = el('totalCount');
+    const levelText = el('levelText');
+    const progressFill = el('progressFill');
+    const dots = el('dots');
+    const levelLabels = el('levelLabels');
+    const hoverTip = el('hoverTip');
+    const addAmount = el('addAmount');
+    const addBtn = el('addBtn');
+    const toast = el('toast');
+    const nameModal = el('nameModal');
+    const nameInput = el('nameInput');
+    const themeBtn = el('themeBtn');
+    const paletteSelect = el('paletteSelect');
+    const showMoreBtn = el('showMoreBtn');
+    const malaQuot = el('malaQuot');
+    const malaIcons = el('malaIcons');
+
+    const tabsEl = document.getElementById('tabs');
+    const views = {
+      history: document.getElementById('historyView'),
+      next: document.getElementById('nextView'),
+      goals: document.getElementById('goalsView'),
+    };
+    const nextInfoText = document.getElementById('nextInfoText');
+    const goalDays = document.getElementById('goalDays');
+    const goalMonths = document.getElementById('goalMonths');
+    const calcGoalBtn = document.getElementById('calcGoalBtn');
+    const goalResult = document.getElementById('goalResult');
+
+    // Theme + palette
+    document.documentElement.setAttribute('data-theme', state.theme);
+    applyPalette(state.palette);
+
+    themeBtn.addEventListener('click', () => {
+      state.theme = state.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', state.theme);
+      localStorage.setItem('tally_theme', state.theme);
+      saveThemePref(); // optional server persistence
+    });
+    paletteSelect.addEventListener('change', () => {
+      state.palette = paletteSelect.value;
+      localStorage.setItem('tally_palette', state.palette);
+      applyPalette(state.palette);
+      saveThemePref();
+    });
+
+    function applyPalette(p) {
+      paletteSelect.value = p;
+      const R = document.documentElement.style;
+      const set = (pri, acc, dot) => {
+        R.setProperty('--primary', pri);
+        R.setProperty('--accent', acc);
+        R.setProperty('--dot-active', dot);
+      };
+      switch (p) {
+        case 'luxury': set('#d4af37', '#f1e6b8', '#b08d29'); break;
+        case 'saffron': set('#ff7a00', '#ffd166', '#9a5a00'); break;
+        case 'jade': set('#0f766e', '#2dd4bf', '#064e3b'); break;
+        case 'lotus': set('#ec4899', '#a78bfa', '#7c3aed'); break;
+        case 'midnight': set('#4f46e5', '#06b6d4', '#1e3a8a'); break;
+        case 'ruby': set('#e11d48', '#f59e0b', '#7f1d1d'); break;
+        case 'sapphire': set('#2563eb', '#60a5fa', '#1e40af'); break;
+        case 'sunset': set('#fb7185', '#f97316', '#7c2d12'); break;
+        case 'forest': set('#15803d', '#86efac', '#14532d'); break;
+        case 'ocean': set('#0ea5e9', '#22d3ee', '#0c4a6e'); break;
+        case 'rose': set('#f43f5e', '#fda4af', '#7a0830'); break;
+        case 'amethyst': set('#8b5cf6', '#c084fc', '#5b21b6'); break;
+        case 'copper': set('#b45309', '#f59e0b', '#7c2d12'); break;
+        case 'mono': set('#334155', '#94a3b8', '#0f172a'); break;
+        case 'sakura': set('#f472b6', '#fbcfe8', '#9d174d'); break;
+        case 'desert': set('#d97706', '#fde68a', '#7c2d12'); break;
+        case 'aurora': set('#22d3ee', '#a3e635', '#065f46'); break;
+        default: set('#2563eb', '#10b981', getComputedStyle(document.documentElement).getPropertyValue('--text') || '#111827');
+      }
+    }
+
+    async function saveThemePref() {
+      if (!state.name) return;
+      try {
+        await postForm({ action: 'setTheme', name: state.name, theme: state.theme, palette: state.palette });
+      } catch (e) {
+        // fine if your backend doesn't implement this
+      }
+    }
+
+    // Tabs
+    tabsEl.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => setActiveTab(t.dataset.tab));
+    });
+    function setActiveTab(tab) {
+      tabsEl.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === tab));
+      Object.entries(views).forEach(([k, v]) => v.classList.toggle('active', k === tab));
+    }
+
+    // Switch user
+    el('switchUserBtn').addEventListener('click', () => showNameModal(true));
+
+    // Build dots/labels once
+    (function buildDots() {
+      dots.innerHTML = ''; levelLabels.innerHTML = '';
+      LEVELS.forEach((lvl, i) => {
+        const pct = (lvl / LEVELS[LEVELS.length - 1]) * 100;
+        const d = document.createElement('div'); d.className = 'dot'; d.style.left = pct + '%'; dots.appendChild(d);
+        const label = document.createElement('div'); label.textContent = 'L' + (i + 1); levelLabels.appendChild(label);
+      });
+    })();
+
+    // Progress hover tip
+    const progressWrap = document.getElementById('progressWrap');
+    progressWrap.addEventListener('mousemove', (e) => { hoverTip.style.left = e.offsetX + 'px'; });
+    progressWrap.addEventListener('mouseenter', () => { updateHoverTip(); hoverTip.style.opacity = 1; });
+    progressWrap.addEventListener('mouseleave', () => { hoverTip.style.opacity = 0; });
+    let tipTimer;
+    function placeTipAtProgress() {
+      const cap = LEVELS[LEVELS.length - 1];
+      const pct = Math.max(0, Math.min(100, (state.total / cap) * 100));
+      const barRect = progressWrap.getBoundingClientRect();
+      hoverTip.style.left = (barRect.width * (pct / 100)) + 'px';
+    }
+    function flashTip() {
+      clearTimeout(tipTimer); updateHoverTip(); placeTipAtProgress();
+      hoverTip.style.opacity = 1; tipTimer = setTimeout(() => { hoverTip.style.opacity = 0; }, 2200);
+    }
+    progressWrap.addEventListener('click', flashTip);
+    progressWrap.addEventListener('touchstart', () => { flashTip(); }, { passive: true });
+
+    // Name modal — write-first + cache hydrate
+    document.getElementById('saveNameBtn').addEventListener('click', async () => {
+      const n = (nameInput.value || '').trim();
+      if (!n) return pop('Please enter your name.');
+
+      const cached = loadCache(n);
+      state.name = n; helloName.textContent = n;
+      localStorage.setItem('tally_name', n);
+
+      if (cached) {
+        state.total = Number(cached.total || 0);
+        state.history = cached.history || [];
+        state.historyLimit = HISTORY_DEFAULT_LIMIT;
+        state.historyIsPartial = true;
+        hideNameModal(); render();
+      } else {
+        hideNameModal();
+        state.total = 0; state.history = [];
+        state.historyLimit = HISTORY_DEFAULT_LIMIT; state.historyIsPartial = true;
+        render();
+      }
+
+      try {
+        const created = await postForm({ action: 'createUser', name: n });
+        if (!created.ok) throw new Error(created.error || 'Create failed');
+
+        const minimal = await getJSON({ action: 'getUser', name: n, limit: String(HISTORY_DEFAULT_LIMIT) });
+        if (!minimal.ok) throw new Error(minimal.error || 'Load failed');
+
+        state.total = Number(minimal.total || 0);
+        state.history = minimal.history || [];
+        state.historyLimit = HISTORY_DEFAULT_LIMIT;
+        state.historyIsPartial = true;
+        render(); saveCache(n, state);
+
+        if (minimal.theme) { state.theme = minimal.theme; document.documentElement.setAttribute('data-theme', state.theme); localStorage.setItem('tally_theme', state.theme); }
+        if (minimal.palette) { state.palette = minimal.palette; localStorage.setItem('tally_palette', state.palette); applyPalette(state.palette); }
+
+        if (!cached && (!minimal.history || minimal.history.length === 0)) {
+          pop(`Welcome "${state.name}" to our nam jap mission for the new user.`);
+        }
+      } catch (err) {
+        pop('Could not load from Google Sheets. Check your Web App URL.');
+        console.error(err);
+      }
+    });
+    document.getElementById('cancelNameBtn').addEventListener('click', hideNameModal);
+    function showNameModal(isSwitch = false, preset = '') {
+      nameModal.hidden = false;
+      if (isSwitch) nameInput.value = '';
+      if (preset) nameInput.value = preset;
+      setTimeout(() => nameInput.focus(), 50);
+    }
+    function hideNameModal() { nameModal.hidden = true; }
+
+    // Add button — optimistic + reconcile
+    addBtn.addEventListener('click', async () => {
+      const val = Math.floor(Number(addAmount.value || 0));
+      if (!state.name) return showNameModal();
+      if (!isFinite(val) || val <= 0) return pop('Enter a positive number.');
+      if (state.posting) return;
+
+      const prevTotal = state.total;
+      const pendingRow = { timestamp: Date.now(), delta: val, newTotal: prevTotal + val, pending: true };
+      state.history = [pendingRow, ...(state.history || [])];
+      state.total = prevTotal + val;
+      render(); saveCache(state.name, state);
+
+      addBtn.disabled = true; state.posting = true;
+      try {
+        const resp = await postForm({ action: 'add', name: state.name, delta: String(val) });
+        if (!resp.ok) throw new Error(resp.error || 'Save failed');
+
+        const limitToUse = state.historyIsPartial ? HISTORY_DEFAULT_LIMIT : HISTORY_MORE_LIMIT;
+        const fresh = await getJSON({ action: 'getUser', name: state.name, limit: String(limitToUse) });
+        if (!fresh.ok) throw new Error(fresh.error || 'Reload failed');
+
+        state.total = Number(fresh.total || 0);
+        state.history = fresh.history || [];
+        render(); addAmount.value = '';
+        saveCache(state.name, state);
+        pop('Saved!');
+      } catch (err) {
+        state.total = prevTotal;
+        const idx = (state.history || []).findIndex(r => r.pending);
+        if (idx >= 0) state.history.splice(idx, 1);
+        render(); saveCache(state.name, state);
+        pop('Error: ' + err.message);
+      } finally {
+        addBtn.disabled = false; state.posting = false;
+      }
+    });
+
+    // "Show more" — fetch full history on demand
+    showMoreBtn.addEventListener('click', async () => {
+      if (!state.name) return;
+
+      // First time: fetch the full history from the server
+      if (state.historyIsPartial) {
+        try {
+          const more = await getJSON({ action: 'getUser', name: state.name, limit: String(HISTORY_MORE_LIMIT) });
+          if (!more.ok) throw new Error(more.error || 'Load failed');
+
+          state.total = Number(more.total || 0);
+          state.history = more.history || [];
+          state.historyIsPartial = false;     // we've now loaded it all
+          state.historyExpanded = true;      // start expanded
+          state.historyLimit = state.history.length;
+          render();
+          saveCache(state.name, state);
+        } catch (err) {
+          pop('Could not load more history.');
+          console.error(err);
+        }
+        return;
+      }
+
+      // After full history is loaded: toggle locally
+      state.historyExpanded = !state.historyExpanded;
+      state.historyLimit = state.historyExpanded ? state.history.length : HISTORY_DEFAULT_LIMIT;
+      render();
+      saveCache(state.name, state);
+    });
+
+    // Goals: calculator (local only)
+    calcGoalBtn.addEventListener('click', () => {
+      const { level, next, remaining } = computeLevel(state.total);
+      if (!next) {
+        goalResult.textContent = 'You are already at the top level. 🙌';
+        return;
+      }
+      const d = Math.max(0, Math.floor(Number(goalDays.value || 0)));
+      const m = Math.max(0, Math.floor(Number(goalMonths.value || 0)));
+      const totalDays = d + (m * 30);
+      if (totalDays <= 0) {
+        goalResult.textContent = 'Enter days and/or months greater than 0.';
+        return;
+      }
+      const perDay = Math.ceil(remaining / totalDays);
+      const malasPerDay = Math.ceil(perDay / 108);
+      goalResult.textContent =
+        `Level ${level + 1} in ${totalDays} day(s): ` +
+        `${perDay.toLocaleString()} per day.`;
+    });
+
+    // Render UI
+    function render() {
+      totalCount.textContent = formatNum(state.total);
+      renderMala();
+      const { level, next, remaining } = computeLevel(state.total);
+      levelText.textContent = `Level ${level} of 9`;
+      const cap = LEVELS[LEVELS.length - 1];
+      const pct = Math.max(0, Math.min(100, (state.total / cap) * 100));
+      progressFill.style.width = pct + '%';
+      updateDots(level); updateHoverTip(remaining, next, level);
+      renderHistory();
+      renderNextInfo(level, next);
+    }
+
+    // Mala display (📿)
+    function renderMala() {
+      const q = Math.floor((state.total || 0) / 108);
+      malaQuot.textContent = formatNum(q);
+      const MAX_ICONS = 10;
+      malaIcons.innerHTML = '';
+      const show = Math.min(q, MAX_ICONS);
+      for (let i = 0; i < show; i++) {
+        const span = document.createElement('span');
+        span.className = 'bead';
+        span.textContent = '📿';
+        malaIcons.appendChild(span);
+      }
+      if (q > MAX_ICONS) {
+        const more = document.createElement('span');
+        more.className = 'more';
+        more.textContent = `+${formatNum(q - MAX_ICONS)}`;
+        malaIcons.appendChild(more);
+      }
+    }
+
+    function renderNextInfo(level, next) {
+      if (!next) {
+        nextInfoText.textContent = 'You are at the top level. 🏁';
+        return;
+      }
+      const nextLevelNum = level + 1;
+      if (nextLevelNum === 8) {
+        nextInfoText.textContent = 'Level 8 insight: whatever you say becomes reality.';
+      } else {
+        nextInfoText.textContent = '';
+      }
+    }
+
+    function updateHoverTip(remaining, next, level) {
+      const info = remaining !== undefined ? { remaining, next, level } : computeLevel(state.total);
+      hoverTip.textContent = info.next
+        ? `🚀 ${formatNum(info.remaining)} more to reach Level ${info.level + 1}`
+        : '🏁 You reached the top level!';
+    }
+    function updateDots(level) {
+      const ds = dots.querySelectorAll('.dot');
+      ds.forEach((d, i) => d.classList.toggle('reached', i < level));
+    }
+
+    function renderHistory() {
+      const body = document.getElementById('historyBody');
+      body.innerHTML = '';
+
+      const visible = (state.history || []).slice(0, state.historyLimit);
+      visible.forEach(item => {
+        const tr = document.createElement('tr');
+        const ts = new Date(item.timestamp);
+        const cls = item.pending ? ' class="pending"' : '';
+        tr.innerHTML = `<td${cls}>${fmtDate(ts)}${item.pending ? ' · syncing…' : ''}</td>
+                    <td${cls}>+${formatNum(item.delta)}</td>
+                    <td${cls}>${formatNum(item.newTotal)}</td>`;
+        body.appendChild(tr);
+      });
+
+      // Show button if we can expand or collapse
+      const canExpand = state.historyIsPartial || (state.history.length > HISTORY_DEFAULT_LIMIT);
+      showMoreBtn.hidden = !canExpand;
+      if (!showMoreBtn.hidden) {
+        showMoreBtn.textContent = state.historyIsPartial
+          ? 'Show more'
+          : (state.historyExpanded ? 'Show less' : 'Show more');
+      }
+    }
+
+
+    function computeLevel(total) {
+      let level = 0;
+      for (let i = 0; i < LEVELS.length; i++) if (total >= LEVELS[i]) level = i + 1;
+      if (level >= LEVELS.length) return { level: LEVELS.length, next: null, remaining: 0 };
+      const next = LEVELS[level]; const remaining = Math.max(0, next - total);
+      return { level, next, remaining };
+    }
+
+    function formatNum(n) { return Number(n || 0).toLocaleString(undefined); }
+    function fmtDate(d) {
+      try { return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(d); }
+      catch { return new Date(d).toLocaleString(); }
+    }
+
+    async function getJSON(params) {
+      const u = new URL(SCRIPT_URL);
+      Object.entries({ ...(params || {}), key: API_KEY }).forEach(([k, v]) => { if (v !== '' && v != null) u.searchParams.set(k, v); });
+      const res = await fetch(u.toString(), { method: 'GET', cache: 'no-cache' });
+      return res.json();
+    }
+    async function postForm(params) {
+      const form = new URLSearchParams();
+      Object.entries({ ...(params || {}), key: API_KEY }).forEach(([k, v]) => form.append(k, v));
+      const res = await fetch(SCRIPT_URL, { method: 'POST', body: form });
+      return res.json();
+    }
+
+    function pop(msg) {
+      toast.textContent = msg; toast.classList.add('show');
+      clearTimeout(pop._t); pop._t = setTimeout(() => toast.classList.remove('show'), 2300);
+    }
+
+    // Boot
+    (function boot() {
+      const raw = localStorage.getItem('tally_name');
+      const saved = (raw && raw !== 'null' && raw !== 'undefined') ? String(raw).trim() : '';
+      applyPalette(state.palette);
+      setActiveTab('history');
+      showNameModal(false, saved);
+      if (saved) nameInput.select();
+    })();
+  </script>
+</body>
+
+</html>
